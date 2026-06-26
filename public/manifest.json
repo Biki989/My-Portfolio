@@ -1,0 +1,24 @@
+{
+  "name": "Biki Kalita — ML Engineer Portfolio",
+  "short_name": "Biki Kalita",
+  "description": "ML Engineer and Software Engineer specializing in machine learning, data science, and production-ready ML APIs.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F2F3F5",
+  "theme_color": "#F2F3F5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

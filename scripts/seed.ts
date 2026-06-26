@@ -3,9 +3,14 @@
 // Run with: bun run /home/z/my-project/scripts/seed.ts
 
 import { db } from '../src/lib/db'
+import { ensureAdminSeeded } from '../src/lib/auth'
 
 async function main() {
   console.log('🌱 Seeding database…')
+
+  // 0. AdminUser (singleton) — password hash seeded from .env on first run.
+  await ensureAdminSeeded()
+  console.log('✓ Admin user present')
 
   // 1. SiteConfig singleton
   const existing = await db.siteConfig.findUnique({ where: { id: 'singleton' } })

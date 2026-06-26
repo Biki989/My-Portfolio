@@ -85,3 +85,70 @@ Stage Summary:
   - /?admin = password-gated CRM. Default creds: biki / BikiPortfolio2026! (change in .env).
 - CRM edits propagate to the public portfolio on the next page load (same SQLite DB).
 - All write APIs (PUT /api/portfolio, GET /api/export-html) are auth-gated; the public GET endpoint remains open.
+
+---
+Task ID: 3
+Agent: main (Super Z)
+Task: Add resume, SEO-optimize for "software engineer / machine learning" searches, add security protocols so only Biki can log in, and document how to change the password.
+
+Work Log:
+- Copied the resume PDF to /home/z/my-project/public/Biki-1.2.pdf so the existing /Biki-1.2.pdf link in the contact section works.
+- Added two Prisma models for auth: AdminUser (singleton row with scrypt-hashed password) and LoginAttempt (tracks failed attempts per IP for rate limiting). Pushed schema to DB.
+- Rewrote src/lib/auth.ts:
+  - scrypt password hashing (16-byte salt, 64-byte key, timingSafeEqual comparison)
+  - ensureAdminSeeded() — copies .env credentials into DB on first login
+  - verifyCredentials(username, password, ip) — enforces 5-attempts-per-15-min rate limit
+  - changePassword(current, next) — validates current password, enforces min-10-char + letter + digit policy
+- Updated /api/auth/login route: extracts real IP from x-forwarded-for, returns 429 with Retry-After header when rate-limited, sets SameSite=Strict cookie.
+- Added /api/auth/change-password route (auth-gated, requires current password).
+- Cleaned up /api/auth/me route (removed broken re-export).
+- Added src/middleware.ts with comprehensive security headers:
+  - HSTS (2 years, includeSubDomains, preload)
+  - Content-Security-Policy (allows only self + cdnjs.cloudflare.com for Three.js + Google Fonts)
+  - X-Frame-Options: DENY
+  - X-Content-Type-Options: nosniff
+  - Referrer-Policy: strict-origin-when-cross-origin
+  - Permissions-Policy (camera, microphone, geolocation, payment all disabled)
+  - Cross-Origin-Opener-Policy: same-origin
+- Added vercel.json with security headers (backup) + static asset caching for PDF and images.
+- Added public/robots.txt (allows crawling, blocks /api/, points to sitemap).
+- Added src/app/sitemap.ts (dynamic sitemap with portfolio URL + project anchors + resume PDF).
+- Added public/manifest.json (PWA-ready).
+- Copied icon.svg and apple-icon.png to /public.
+- Updated src/app/layout.tsx with comprehensive SEO metadata:
+  - 40+ keywords covering ML Engineer, Software Engineer, Machine Learning, Data Science, etc.
+  - Open Graph profile tags
+  - Twitter Card tags
+  - Robots directives (index, follow, max-image-preview:large)
+  - Viewport with theme color
+  - Manifest link
+- Updated src/app/page.tsx:
+  - generateMetadata() uses DB-stored SEO title/description
+  - Injects 3 JSON-LD structured data blocks (Person, WebSite, ProfilePage) for rich Google results
+- Added "Security" section to the CRM with:
+  - Account security overview card (shows username, storage method, rate limit, session, headers)
+  - Change password form (current + new + confirm, with show/hide toggles, password policy enforcement)
+  - Forgot password card with recovery instructions
+- Updated .env with SITE_URL placeholder and clearer comments.
+- Wrote ADMIN-GUIDE.md documenting: site map, 3 ways to change password (CRM UI / Vercel env vars / direct DB edit), all security features, SEO optimizations, post-deploy checklist, and quick reference table.
+
+Verification (Agent Browser + curl, end-to-end):
+- Resume PDF: curl /Biki-1.2.pdf → 200, 308525 bytes, application/pdf
+- Security headers: curl -I / → all 7 headers present (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy)
+- JSON-LD: curl / → 3 blocks detected (Person, WebSite, ProfilePage)
+- Sitemap: curl /sitemap.xml → valid XML with portfolio URL, project anchors, resume PDF
+- Robots.txt: served correctly
+- Meta tags: description, 40+ keywords, OG tags, Twitter Card tags all present
+- Rate limiting: 5 wrong attempts → 401; 6th attempt → 429 with Retry-After: 900
+- Login with correct creds → CRM dashboard loads
+- Change password from CRM UI → "Password changed" toast
+- Sign out → old password rejected → new password accepted
+- Changed password back to original via CRM UI
+- Lint clean. No runtime errors.
+
+Stage Summary:
+- Resume: served at /Biki-1.2.pdf, linked from the contact section.
+- SEO: keyword-rich title, meta description, 40+ keywords, OG/Twitter cards, JSON-LD Person+WebSite+ProfilePage, sitemap.xml, robots.txt, manifest.json.
+- Security: scrypt-hashed passwords in DB (not env), 5-attempt/15-min rate limiting with 429+Retry-After, httpOnly+SameSite=Strict+Secure cookies, 7 security headers via middleware AND vercel.json, all write APIs auth-gated.
+- Password change: 3 documented ways — CRM UI (recommended), Vercel env vars (if forgot password), direct DB edit (advanced).
+- ADMIN-GUIDE.md has the full post-deploy checklist including Google Search Console submission.

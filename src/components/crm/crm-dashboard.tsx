@@ -10,6 +10,7 @@ import { AboutEditor } from '@/components/crm/about-editor'
 import { StackEditor } from '@/components/crm/stack-editor'
 import { ContactEditor } from '@/components/crm/contact-editor'
 import { BrandingEditor } from '@/components/crm/branding-editor'
+import { SettingsEditor } from '@/components/crm/settings-editor'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Toaster } from '@/components/ui/sonner'
@@ -18,7 +19,7 @@ import {
   Sparkles, Layout, Sliders, FolderKanban, User, Layers,
   Mail, Save, Download, RotateCcw, Monitor, Smartphone,
   CheckCircle2, Loader2, Eye, EyeOff, PanelRightClose, PanelRight,
-  ExternalLink, LogOut
+  ExternalLink, LogOut, ShieldCheck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -26,7 +27,7 @@ import type { PortfolioData } from '@/lib/portfolio-types'
 
 type Section =
   | 'hero' | 'marquee' | 'projects' | 'about'
-  | 'stack' | 'contact' | 'branding'
+  | 'stack' | 'contact' | 'branding' | 'settings'
 
 const NAV: { id: Section; label: string; icon: React.ElementType; hint: string }[] = [
   { id: 'hero', label: 'Hero', icon: Sparkles, hint: 'Top intro section' },
@@ -36,6 +37,7 @@ const NAV: { id: Section; label: string; icon: React.ElementType; hint: string }
   { id: 'stack', label: 'Stack', icon: Layers, hint: 'Tool groups' },
   { id: 'contact', label: 'Contact', icon: Mail, hint: 'Email + socials' },
   { id: 'branding', label: 'Branding & SEO', icon: Layout, hint: 'Brand, meta, footer' },
+  { id: 'settings', label: 'Security', icon: ShieldCheck, hint: 'Change password' },
 ]
 
 export function CrmDashboard({ username, dataSeed }: { username: string; dataSeed: PortfolioData }) {
@@ -123,6 +125,7 @@ export function CrmDashboard({ username, dataSeed }: { username: string; dataSee
     case 'stack': editor = <StackEditor />; break
     case 'contact': editor = <ContactEditor />; break
     case 'branding': editor = <BrandingEditor />; break
+    case 'settings': editor = <SettingsEditor username={username} />; break
   }
 
   const activeNav = NAV.find((n) => n.id === active)!

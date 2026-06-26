@@ -122,3 +122,24 @@ model MarqueeItem {
   text  String
   order Int    @default(0)
 }
+
+// ─── CRM authentication ───
+// The single admin user. Password is stored as a scrypt hash
+// (format: "salt:hash", both hex). Seeded from .env on first run.
+model AdminUser {
+  id           String   @id @default("singleton")
+  username     String   @unique
+  passwordHash String
+  updatedAt    DateTime @updatedAt
+}
+
+// Tracks failed login attempts per IP for rate limiting.
+// Cleared on successful login; auto-pruned after the window expires.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+}

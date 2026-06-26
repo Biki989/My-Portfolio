@@ -1,14 +1,9 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+# Allow all crawlers full access to the public portfolio.
 User-agent: *
 Allow: /
+
+# Block the CRM API endpoints from being indexed.
+Disallow: /api/
+
+# Sitemap location (replace the domain with your real Vercel URL after deploy).
+Sitemap: https://YOUR-VERCEL-DOMAIN.vercel.app/sitemap.xml
