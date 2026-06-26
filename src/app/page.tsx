@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import type { Metadata } from 'next'
 import { PortfolioView } from '@/components/portfolio/portfolio-view'
 import { CrmLogin } from '@/components/crm/crm-login'
@@ -108,6 +108,19 @@ export default async function Home({
   const sp = await searchParams
   const isAdminRoute = 'admin' in sp
 
+  // Read the per-request nonce so we can attach it to inline JSON-LD scripts.
+  // (Next.js auto-applies the nonce to its own inline scripts because we also
+  // read x-nonce in layout.tsx.)
+  const nonce = (await headers()).get('x-nonce') ?? undefined
+
+  // Compute the request origin (e.g. https://biki-portfolio.vercel.app) so
+  // the CRM's live-preview iframe can load /preview-boot.js via an absolute
+  // URL (srcDoc iframes have no base URL, so relative URLs don't resolve).
+  const headerList = await headers()
+  const proto = headerList.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+  const host = headerList.get('x-forwarded-host') || headerList.get('host') || 'localhost:3000'
+  const origin = `${proto}://${host}`
+
   // Public portfolio — anyone can see this.
   if (!isAdminRoute) {
     const data = await loadPortfolio()
@@ -119,10 +132,11 @@ export default async function Home({
           <script
             key={i}
             type="application/ld+json"
+            nonce={nonce}
             dangerouslySetInnerHTML={{ __html: JSON.stringify(node) }}
           />
         ))}
-        <PortfolioView data={data} />
+        <PortfolioView data={data} nonce={nonce} />
       </>
     )
   }
@@ -138,5 +152,5 @@ export default async function Home({
 
   // Authenticated CRM dashboard.
   const data = await loadPortfolio()
-  return <CrmDashboard username={session.username} dataSeed={data} />
+  return <CrmDashboard username={session.username} dataSeed={data} origin={origin} nonce={nonce} />
 }

@@ -40,7 +40,17 @@ const NAV: { id: Section; label: string; icon: React.ElementType; hint: string }
   { id: 'settings', label: 'Security', icon: ShieldCheck, hint: 'Change password' },
 ]
 
-export function CrmDashboard({ username, dataSeed }: { username: string; dataSeed: PortfolioData }) {
+export function CrmDashboard({
+  username,
+  dataSeed,
+  origin,
+  nonce,
+}: {
+  username: string
+  dataSeed: PortfolioData
+  origin: string
+  nonce?: string
+}) {
   const router = useRouter()
   const [active, setActive] = useState<Section>('hero')
   const [previewWidth, setPreviewWidth] = useState<'desktop' | 'mobile'>('desktop')
@@ -294,7 +304,7 @@ export function CrmDashboard({ username, dataSeed }: { username: string; dataSee
               </div>
             </div>
             <div className="flex-1 min-h-0 p-3">
-              <LivePreview width={previewWidth} />
+              <LivePreview width={previewWidth} origin={origin} />
             </div>
           </aside>
         )}

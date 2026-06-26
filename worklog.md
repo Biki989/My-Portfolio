@@ -152,3 +152,53 @@ Stage Summary:
 - Security: scrypt-hashed passwords in DB (not env), 5-attempt/15-min rate limiting with 429+Retry-After, httpOnly+SameSite=Strict+Secure cookies, 7 security headers via middleware AND vercel.json, all write APIs auth-gated.
 - Password change: 3 documented ways — CRM UI (recommended), Vercel env vars (if forgot password), direct DB edit (advanced).
 - ADMIN-GUIDE.md has the full post-deploy checklist including Google Search Console submission.
+
+---
+Task ID: 4
+Agent: main (Super Z)
+Task: Remove 'unsafe-inline' from CSP script-src and replace with a per-request nonce-based CSP.
+
+Work Log:
+- Extracted the preview boot JS from src/components/crm/live-preview.tsx (PREVIEW_BOOT_JS constant, ~230 lines) to a standalone external file at /public/preview-boot.js. This eliminates the only inline <script> in the CRM's live-preview srcDoc iframe.
+- Rewrote src/middleware.ts:
+  - Generates a cryptographically random 18-byte nonce per request (base64-encoded) via crypto.getRandomValues + btoa.
+  - Sets the nonce as the x-nonce REQUEST header (so server components can read it via headers()).
+  - Builds the CSP with script-src 'self' 'nonce-${nonce}' https://cdnjs.cloudflare.com — NO 'unsafe-inline'.
+  - style-src still has 'unsafe-inline' (needed for Next.js styled-jsx and inline styles — separate concern, user only asked about script-src).
+- Updated src/app/layout.tsx:
+  - Made RootLayout async.
+  - Reads the nonce from headers().get('x-nonce') — this is the signal Next.js uses to auto-apply the nonce to its own inline scripts (hydration data, runtime config).
+  - Passes the nonce to the <Toaster> component (sonner) so its inline scripts (if any) carry the nonce.
+- Updated src/app/page.tsx:
+  - Reads the nonce from headers() and adds nonce={nonce} to all JSON-LD <script> tags.
+  - Computes the request origin (proto + forwarded-host) and passes it to <CrmDashboard> so the live-preview iframe can load /preview-boot.js via an absolute URL.
+  - Passes the nonce to <PortfolioView> as well (for future use).
+- Updated src/components/crm/crm-dashboard.tsx:
+  - Accepts origin and nonce props from page.tsx.
+  - Passes origin to <LivePreview>.
+- Rewrote src/components/crm/live-preview.tsx:
+  - Removed the entire PREVIEW_BOOT_JS inline constant (~230 lines).
+  - buildPreviewHtml now accepts an origin parameter.
+  - The srcDoc HTML now loads the boot JS via <script src="${origin}/preview-boot.js"> (external, same-origin).
+  - No inline scripts remain in the srcDoc — only external scripts (Three.js from CDN + preview-boot.js from self).
+  - LivePreview component now requires an origin prop.
+
+Verification (curl + Agent Browser):
+- CSP header on / : script-src 'self' 'nonce-XXX' https://cdnjs.cloudflare.com — NO 'unsafe-inline' ✓
+- CSP header on /?admin : same — NO 'unsafe-inline' ✓
+- Nonce changes per request (3 different nonces for 3 requests) ✓
+- /preview-boot.js served: 200, 9821 bytes, application/javascript ✓
+- Public portfolio: canvas present, THREE loaded, 19/27 reveal elements triggered on scroll, no CSP violations in console ✓
+- CRM login: works with biki / BikiPortfolio2026! ✓
+- CRM dashboard: iframe loads, canvas in iframe has dimensions (609x772), Three.js scene rendering ✓
+- iframe scripts: only external (cdnjs + /preview-boot.js), no inline ✓
+- No CSP violations or page errors in either route ✓
+- Lint clean ✓
+
+Stage Summary:
+- 'unsafe-inline' completely removed from script-src.
+- All inline scripts now carry a per-request nonce:
+  - Next.js's own inline scripts (hydration, runtime config) — auto-applied by reading x-nonce in layout.tsx
+  - JSON-LD structured data scripts — manually given nonce={nonce} in page.tsx
+- The CRM live-preview iframe's boot JS moved to /public/preview-boot.js (external file, loaded via absolute URL, allowed by script-src 'self').
+- style-src still has 'unsafe-inline' (needed for Next.js styled-jsx/inline styles — would require a much larger refactor to remove).

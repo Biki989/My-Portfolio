@@ -27,7 +27,7 @@ declare global {
   interface Window { THREE: any }
 }
 
-export function PortfolioView({ data }: { data: PortfolioData }) {
+export function PortfolioView({ data, nonce }: { data: PortfolioData; nonce?: string }) {
   const c = data.config
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
