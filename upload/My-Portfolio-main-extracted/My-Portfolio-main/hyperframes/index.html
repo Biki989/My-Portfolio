@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1920, height=1080" />
+  <title>Alex Rivera — Hero Composition</title>
+
+  <!--
+    HyperFrames composition: 10-second hero intro
+    Deterministic rules (required for seek-based video rendering):
+      - NO Math.random() / Date.now() in the draw path.
+      - Every frame is a pure function of the timeline time `t`.
+      - All randomness comes from a seeded PRNG (mulberry32) so the
+        same frame number always produces the same pixels.
+      - The single GSAP timeline is paused; HyperFrames scrubs it.
+        Composition duration == timeline duration == 10.0s.
+  -->
+
+  <!-- GSAP: HyperFrames resolves this for rendering, falls back to CDN for preview -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <!-- Hermetic local fonts (woff2 captured from Google Fonts) so the render
+       is fully offline-safe. No external requests during rendering. -->
+  <link rel="stylesheet" href="./capture/assets/fonts/fonts.css" />
+
+  <style>
+    :root {
+      --hero-bg: #05080a;
+      --accent: #4ade80;
+      --accent-2: #67e8f9;
+      --accent-3: #a78bfa;
+      --paper: #f4f1ea;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 1920px; height: 1080px; overflow: hidden;
+      background: var(--hero-bg);
+      font-family: "Fraunces", Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* The composition root — HyperFrames keys on this attribute */
+    .stage {
+      position: relative;
+      width: 1920px; height: 1080px;
+      overflow: hidden;
+      background: var(--hero-bg);
+      isolation: isolate;
+    }
+
+    #rain {
+      position: absolute; inset: 0;
+      width: 1920px; height: 1080px;
+      z-index: 0;
+      opacity: 0.85;
+    }
+
+    /* Vignette so the type stays legible over the rain */
+    .veil {
+      position: absolute; inset: 0; z-index: 1;
+      background:
+        radial-gradient(ellipse 60% 55% at 32% 50%, rgba(5,8,10,0.55), transparent 70%),
+        linear-gradient(180deg, rgba(5,8,10,0.15) 0%, rgba(5,8,10,0.65) 100%);
+      pointer-events: none;
+    }
+
+    .content {
+      position: absolute; z-index: 2;
+      left: 160px; top: 50%;
+      color: var(--paper);
+      max-width: 1200px;
+    }
+
+    .eyebrow {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 22px; letter-spacing: 0.08em;
+      color: rgba(244,241,234,0.65);
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 40px;
+    }
+    .eyebrow .dot {
+      width: 11px; height: 11px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px rgba(74,222,128,0.8);
+    }
+
+    h1.name {
+      font-family: "Fraunces", serif;
+      font-weight: 300;
+      font-size: 180px;
+      line-height: 0.92;
+      letter-spacing: -0.04em;
+      margin-bottom: 18px;
+    }
+    h1.name .last {
+      font-style: italic;
+      font-weight: 400;
+      background: linear-gradient(110deg, var(--accent), var(--accent-2) 55%, var(--accent-3));
+      -webkit-background-clip: text; background-clip: text;
+      color: transparent;
+    }
+
+    .role {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 38px; font-weight: 400;
+      color: var(--accent-2);
+      letter-spacing: 0.02em;
+      margin-bottom: 34px;
+      min-height: 1.2em;
+    }
+    .role .caret {
+      display: inline-block;
+      width: 0.5ch;
+      color: var(--accent);
+    }
+
+    .tagline {
+      font-family: "Fraunces", serif;
+      font-weight: 300;
+      font-size: 46px;
+      line-height: 1.35;
+      max-width: 24ch;
+      color: rgba(244,241,234,0.82);
+      letter-spacing: -0.01em;
+    }
+    .tagline em {
+      font-style: italic;
+      color: var(--paper);
+    }
+
+    /* Corner brand mark */
+    .brand {
+      position: absolute; z-index: 3;
+      top: 56px; left: 160px;
+      display: flex; align-items: center; gap: 16px;
+      color: var(--paper);
+    }
+    .brand__mark {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 20px;
+      width: 52px; height: 52px;
+      display: grid; place-items: center;
+      border: 1.5px solid rgba(244,241,234,0.4);
+      border-radius: 50%;
+    }
+    .brand__text { font-size: 26px; font-weight: 500; }
+
+    /* Bottom-right timestamp / handle */
+    .handle {
+      position: absolute; z-index: 3;
+      bottom: 56px; right: 160px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 20px; letter-spacing: 0.08em;
+      color: rgba(244,241,234,0.5);
+    }
+
+    /* A thin accent rule that draws in */
+    .rule {
+      position: absolute; z-index: 2;
+      left: 160px; bottom: 120px;
+      height: 2px; width: 0;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" data-composition-id="hero-intro"
+       data-start="0" data-width="1920" data-height="1080">
+
+    <canvas id="rain" class="clip" width="1920" height="1080"></canvas>
+    <div class="veil"></div>
+
+    <div class="brand clip">
+      <span class="brand__mark">AR</span>
+      <span class="brand__text">Alex Rivera</span>
+    </div>
+
+    <div class="content clip">
+      <p class="eyebrow"><span class="dot"></span> Software Engineer · Lisbon</p>
+      <h1 class="name"><span class="first">Alex</span> <span class="last">Rivera</span></h1>
+      <p class="role"><span class="role-text"></span><span class="caret">▋</span></p>
+      <p class="tagline">Building <em>resilient systems</em><br/>that feel effortless.</p>
+    </div>
+
+    <div class="rule clip"></div>
+    <div class="handle clip">@alexrivera · 2026</div>
+  </div>
+
+  <script>
+    /* ============================================================
+       SEEDED PRNG (mulberry32) — deterministic randomness.
+       Same seed => same sequence => identical frames on re-render.
+       Never use Math.random() in the draw path.
+       ============================================================ */
+    function mulberry32(seed) {
+      return function () {
+        seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    /* ============================================================
+       CODE RAIN — drawn on the canvas, fully driven by time `t`.
+       We pre-generate per-column data once (deterministic), then
+       each frame's glyph grid is a pure function of t.
+       ============================================================ */
+    const canvas = document.getElementById("rain");
+    const ctx = canvas.getContext("2d");
+    const FONT_SIZE = 22;
+    const COLS = Math.floor(1920 / FONT_SIZE);
+    const ROWS = Math.floor(1080 / FONT_SIZE);
+    const GLYPHS = "アイウエオカキクケコサシスセソタチツテトナニヌネノﾊﾋﾌﾍﾎ0123456789{}[]<>/=+*".split("");
+
+    const rng = mulberry32(20260618); // fixed seed
+    // Per-column: starting offset (rows), fall speed (rows/sec), glyph cycle
+    const columns = [];
+    for (let i = 0; i < COLS; i++) {
+      columns.push({
+        startRow: rng() * -ROWS,          // staggered start above the top
+        speed: 0.9 + rng() * 1.8,          // rows per second
+        glyphSeed: Math.floor(rng() * 1e9) // per-column glyph stream seed
+      });
+    }
+
+    // Deterministic glyph at (column stream, time step) — pure function
+    function glyphFor(streamSeed, step) {
+      // hash the stream seed + step into a glyph index
+      let h = (streamSeed ^ Math.imul(step + 1, 2654435761)) >>> 0;
+      h = (h ^ (h >>> 13)) >>> 0;
+      h = Math.imul(h, 1597334677) >>> 0;
+      return GLYPHS[h % GLYPHS.length];
+    }
+
+    function drawRain(t) {
+      // Fade prior frame for trailing tails (deterministic: fixed alpha)
+      ctx.fillStyle = "rgba(5, 8, 10, 0.075)";
+      ctx.fillRect(0, 0, 1920, 1080);
+
+      ctx.font = `${FONT_SIZE}px "JetBrains Mono", monospace`;
+      ctx.textBaseline = "top";
+
+      for (let i = 0; i < COLS; i++) {
+        const col = columns[i];
+        const headRow = col.startRow + col.speed * t; // continuous head position
+        const x = i * FONT_SIZE;
+
+        // Bright leading glyph
+        const headStep = Math.floor(headRow);
+        const headY = headRow * FONT_SIZE;
+        ctx.fillStyle = "rgba(225, 255, 232, 0.95)";
+        ctx.shadowColor = "rgba(120, 255, 170, 0.85)";
+        ctx.shadowBlur = 10;
+        ctx.fillText(glyphFor(col.glyphSeed, headStep), x, headY);
+        ctx.shadowBlur = 0;
+
+        // Faint trailing glyphs behind the head (a few rows up)
+        for (let k = 1; k <= 6; k++) {
+          const ty = (headRow - k) * FONT_SIZE;
+          if (ty < -FONT_SIZE || ty > 1080) continue;
+          const alpha = 0.42 * (1 - k / 7);
+          ctx.fillStyle = `rgba(80, 200, 120, ${alpha.toFixed(3)})`;
+          ctx.fillText(glyphFor(col.glyphSeed, headStep - k), x, ty);
+        }
+      }
+    }
+
+    /* ============================================================
+       THE TIMELINE — single paused GSAP timeline.
+       HyperFrames scrubs this; duration == 10s (the 10-second rule).
+       Canvas is redrawn in an onUpdate callback so every frame of
+       the rendered video reflects the exact scrubbed time.
+       ============================================================ */
+    const roleFull = "Distributed Systems · Real-time Interfaces";
+    const roleEl = document.querySelector(".role-text");
+    const caretEl = document.querySelector(".caret");
+
+    // Pre-type the role characters into a node once we start typing
+    function setRoleText(n) {
+      roleEl.textContent = roleFull.slice(0, n);
+    }
+
+    const tl = gsap.timeline({ paused: true });
+
+    // 0.0–0.5s: canvas already animating via onUpdate from t=0
+    // 0.0s: brand drops in
+    tl.from(".brand", { y: -30, opacity: 0, duration: 0.7, ease: "power3.out" }, 0);
+
+    // 0.3s: eyebrow fades up
+    tl.from(".eyebrow", { y: 24, opacity: 0, duration: 0.6, ease: "power2.out" }, 0.3);
+
+    // 0.4s: name first word
+    tl.from(".name .first", { yPercent: 120, opacity: 0, duration: 0.8, ease: "power4.out" }, 0.4);
+    // 0.55s: name last word
+    tl.from(".name .last", { yPercent: 120, opacity: 0, duration: 0.8, ease: "power4.out" }, 0.55);
+
+    // 1.3s–3.8s: type the role out (no real typing — drive via onUpdate)
+    tl.to({}, {
+      duration: roleFull.length * 0.09, // ~2.5s
+      ease: "none",
+      onStart: () => setRoleText(0),
+      onUpdate: function () {
+        const n = Math.round(this.progress() * roleFull.length);
+        setRoleText(n);
+      },
+      onComplete: () => setRoleText(roleFull.length)
+    }, 1.3);
+
+    // 2.6s: tagline lines rise in
+    tl.from(".tagline", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" }, 2.6);
+
+    // 3.4s: caret blinks on (then loops via keyframes through end)
+    tl.set(".caret", { opacity: 1 }, 3.4);
+    tl.to(".caret", { opacity: 0.2, duration: 0.5, yoyo: true, repeat: 9, ease: "power1.inOut" }, 3.4);
+
+    // 3.6s: accent rule draws across
+    tl.to(".rule", { width: 520, duration: 1.1, ease: "power3.out" }, 3.6);
+
+    // 4.2s: handle fades in bottom-right
+    tl.from(".handle", { opacity: 0, y: 20, duration: 0.7, ease: "power2.out" }, 4.2);
+
+    // Center the content block vertically via GSAP (CSS transform removed to avoid
+    // GSAP/CSS transform conflict), then give it a subtle drift for life.
+    tl.fromTo(".content",
+      { yPercent: -50, y: 0 },
+      { yPercent: -50, y: 10, duration: 5, ease: "sine.inOut" },
+      0
+    );
+
+    // 8.5s: everything holds; tiny fade of the rain opacity for a finish
+    tl.to("#rain", { opacity: 0.7, duration: 1.0, ease: "power2.out" }, 8.6);
+
+    // ── Redraw canvas on every timeline update so scrubbing is exact ──
+    tl.eventCallback("onUpdate", function () {
+      // tl.time() is the scrubbed time in seconds — the source of truth.
+      drawRain(tl.time());
+    });
+
+    // Register the timeline on window.__timelines, keyed by composition id,
+    // so HyperFrames can discover and scrub it during preview/render.
+    window.__timelines = window.__timelines || {};
+    window.__timelines["hero-intro"] = tl;
+
+    // Draw the first frame immediately so a static seek at t=0 isn't blank
+    drawRain(0);
+  </script>
+</body>
+</html>

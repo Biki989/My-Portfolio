@@ -1,0 +1,14 @@
+{
+  "name": "alex-rivera-hero-intro",
+  "version": "1.0.0",
+  "description": "10-second hero intro for Alex Rivera's portfolio — matrix code-rain with name + role reveal.",
+  "composition": "index.html",
+  "duration": 10,
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "output": {
+    "format": "mp4",
+    "filename": "alex-rivera-hero.mp4"
+  }
+}

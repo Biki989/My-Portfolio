@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Singleton row that holds all global, top-level portfolio text.
+model SiteConfig {
+  id                String   @id @default("singleton")
+
+  // Brand / nav
+  brandMark         String   @default("BK")
+  brandName         String   @default("Biki Kalita")
+
+  // SEO
+  seoTitle          String   @default("Biki Kalita · ML Engineer")
+  seoDescription    String   @default("ML Engineer & Data Scientist. Machine Learning workflows, predictive modeling, and data readiness.")
+
+  // Hero
+  heroEyebrow       String   @default("Available for select work · 2026")
+  heroLine1         String   @default("Building")
+  heroLine2Em       String   @default("production-ready")
+  heroLine2Text     String   @default("ML")
+  heroLine3Pre      String   @default("workflows from the")
+  heroLine3Em       String   @default("ground up.")
+  heroLede          String   @default("I'm <strong>Biki Kalita</strong>, an ML engineer working at the intersection of data science, predictive modeling, and performant backend services.")
+  heroPrimaryBtn    String   @default("See selected work")
+  heroSecondaryBtn  String   @default("Start a project")
+
+  // Work section header
+  workSectionIndex  String   @default("01")
+  workSectionTitle  String   @default("Selected work")
+  workSectionSub    String   @default("A few selected ML and data science projects built to solve practical metrics.")
+
+  // About section header + body
+  aboutSectionIndex String   @default("02")
+  aboutSectionTitle String   @default("About")
+  aboutLede         String   @default("I believe in building practical, production-ready Machine Learning workflows from the ground up.")
+  aboutPara1        String   @default("Clean, robust data preparation and exploratory analysis form the baseline of any solid project. I focus on feature prep, SMOTE for class balancing, and extracting meaningful patterns to build dependable predictive models.")
+  aboutPara2        String   @default("Notebooks are great, but production APIs are better. Code is just crystallized thought—transforming raw datasets and mathematical models into clean, deployable, and performant backend services using FastAPI, Flask, and Docker.")
+
+  // Stack section header
+  stackSectionIndex String   @default("03")
+  stackSectionTitle String   @default("Tools of the trade")
+  stackSectionSub   String   @default("I'm language-agnostic and opinion-curious. These are the tools I reach for most.")
+
+  // Contact section
+  contactEyebrow    String   @default("Let's build something")
+  contactEmail      String   @default("bikikalitaxtra@gmail.com")
+  contactSub        String   @default("Available for work. Ready to build dependable predictive models and performant inference APIs.")
+
+  // Footer
+  footerName        String   @default("Biki Kalita")
+  footerMeta        String   @default("Designed & built from scratch · No frameworks")
+
+  updatedAt         DateTime @updatedAt
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  tag         String
+  year        String
+  title       String
+  description String
+  liveUrl     String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  techs       ProjectTech[]
+}
+
+model ProjectTech {
+  id        String @id @default(cuid())
+  projectId String
+  name      String
+  order     Int    @default(0)
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Stat {
+  id      String @id @default(cuid())
+  count   Int
+  suffix  String
+  label   String
+  order   Int    @default(0)
+}
+
+model StackGroup {
+  id    String @id @default(cuid())
+  title String
+  order Int    @default(0)
+
+  items StackItem[]
+}
+
+model StackItem {
+  id       String @id @default(cuid())
+  groupId  String
+  name     String
+  order    Int    @default(0)
+
+  group    StackGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model Social {
+  id    String @id @default(cuid())
+  label String
+  url   String
+  order Int    @default(0)
+}
+
+model MarqueeItem {
+  id    String @id @default(cuid())
+  text  String
+  order Int    @default(0)
+}
