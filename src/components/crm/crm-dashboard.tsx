@@ -17,9 +17,12 @@ import { toast } from 'sonner'
 import {
   Sparkles, Layout, Sliders, FolderKanban, User, Layers,
   Mail, Save, Download, RotateCcw, Monitor, Smartphone,
-  CheckCircle2, Loader2, Eye, EyeOff, PanelRightClose, PanelRight
+  CheckCircle2, Loader2, Eye, EyeOff, PanelRightClose, PanelRight,
+  ExternalLink, LogOut
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
+import type { PortfolioData } from '@/lib/portfolio-types'
 
 type Section =
   | 'hero' | 'marquee' | 'projects' | 'about'
@@ -35,7 +38,8 @@ const NAV: { id: Section; label: string; icon: React.ElementType; hint: string }
   { id: 'branding', label: 'Branding & SEO', icon: Layout, hint: 'Brand, meta, footer' },
 ]
 
-export function CrmDashboard() {
+export function CrmDashboard({ username, dataSeed }: { username: string; dataSeed: PortfolioData }) {
+  const router = useRouter()
   const [active, setActive] = useState<Section>('hero')
   const [previewWidth, setPreviewWidth] = useState<'desktop' | 'mobile'>('desktop')
   const [showPreview, setShowPreview] = useState(true)
@@ -44,13 +48,14 @@ export function CrmDashboard() {
   const saving = usePortfolio((s) => s.saving)
   const dirty = usePortfolio((s) => s.dirty)
   const lastSavedAt = usePortfolio((s) => s.lastSavedAt)
-  const load = usePortfolio((s) => s.load)
+  const hydrate = usePortfolio((s) => s.hydrate)
   const save = usePortfolio((s) => s.save)
-  const reset = usePortfolio((s) => s.reset)
 
+  // Hydrate the in-memory store with server-rendered data on mount so the
+  // editor opens instantly with content already populated.
   useEffect(() => {
-    load()
-  }, [load])
+    hydrate(dataSeed)
+  }, [hydrate, dataSeed])
 
   // Warn before navigating away if there are unsaved changes.
   useEffect(() => {
@@ -77,8 +82,9 @@ export function CrmDashboard() {
   const handleReset = async () => {
     if (!dirty) return
     if (!confirm('Discard all unsaved changes and reload from database?')) return
-    await reset()
-    toast.info('Reverted to last saved state')
+    // Reload from the server — discards local edits.
+    router.refresh()
+    setTimeout(() => window.location.reload(), 100)
   }
 
   const handleExportHtml = () => {
@@ -88,6 +94,13 @@ export function CrmDashboard() {
     // Hit the export endpoint; the browser will download the file.
     window.location.href = '/api/export-html'
     toast.success('Downloading index.html…')
+  }
+
+  const handleLogout = async () => {
+    if (dirty && !confirm('You have unsaved changes. Log out anyway?')) return
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.refresh()
+    setTimeout(() => window.location.reload(), 100)
   }
 
   if (loading) {
@@ -144,6 +157,16 @@ export function CrmDashboard() {
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground hidden md:inline-flex items-center gap-1.5 mr-1">
+            <span className="size-1.5 rounded-full bg-emerald-500"></span>
+            Signed in as <strong className="font-medium text-foreground">{username}</strong>
+          </span>
+          <a href="/" target="_blank" rel="noopener noreferrer">
+            <Button variant="ghost" size="sm">
+              <ExternalLink className="size-4 mr-1.5" />
+              View portfolio
+            </Button>
+          </a>
           <Button variant="ghost" size="sm" onClick={handleReset} disabled={!dirty || saving}>
             <RotateCcw className="size-4 mr-1.5" />
             Revert
@@ -159,6 +182,9 @@ export function CrmDashboard() {
               <Save className="size-4 mr-1.5" />
             )}
             {saving ? 'Saving…' : 'Save'}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleLogout} title="Sign out">
+            <LogOut className="size-4" />
           </Button>
         </div>
       </header>

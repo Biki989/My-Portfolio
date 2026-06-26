@@ -1,5 +1,7 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { verifySession, SESSION_COOKIE_NAME } from '@/lib/auth'
 
 // Shape of the full portfolio document returned to the CRM client.
 export type PortfolioData = {
@@ -96,6 +98,14 @@ const CONFIG_KEYS = new Set([
 ])
 
 export async function PUT(req: Request) {
+  // ─── Auth gate: only a logged-in CRM user can modify the portfolio. ───
+  const cookieStore = await cookies()
+  const jwt = cookieStore.get(SESSION_COOKIE_NAME)?.value
+  const session = await verifySession(jwt)
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const body = (await req.json()) as Body
 
   await db.$transaction(async (tx) => {

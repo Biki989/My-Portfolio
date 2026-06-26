@@ -23,6 +23,7 @@ type State = {
   lastSavedAt: number | null
   // actions
   load: () => Promise<void>
+  hydrate: (data: PortfolioData) => void
   save: () => Promise<void>
   reset: () => Promise<void>
 
@@ -111,6 +112,20 @@ export const usePortfolio = create<State>((set, get) => ({
       set({ loading: false })
     }
   },
+
+  hydrate: (data) =>
+    set({
+      data: {
+        config: { ...EMPTY_CONFIG, ...(data.config ?? {}) } as PortfolioConfig,
+        marquee: data.marquee ?? [],
+        projects: data.projects ?? [],
+        stats: data.stats ?? [],
+        stack: data.stack ?? [],
+        socials: data.socials ?? [],
+      },
+      loading: false,
+      dirty: false,
+    }),
 
   save: async () => {
     set({ saving: true })

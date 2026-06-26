@@ -13,9 +13,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Default metadata — the public portfolio overrides this with the user-edited
+// title/description from the database at request time (see src/app/page.tsx).
 export const metadata: Metadata = {
-  title: "Portfolio CRM",
-  description: "Edit every part of your portfolio website. Live preview, save, and export back to HTML.",
+  title: "Biki Kalita · ML Engineer",
+  description: "ML Engineer & Data Scientist. Machine Learning workflows, predictive modeling, and data readiness.",
   icons: {
     icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
   },
@@ -29,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
         <Toaster />

@@ -1,5 +1,7 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { verifySession, SESSION_COOKIE_NAME } from '@/lib/auth'
 
 // Generate a standalone index.html file (matching the original portfolio template)
 // that contains the user-edited content. The CRM downloads this and the user
@@ -214,6 +216,14 @@ ${socialItems}
 }
 
 export async function GET() {
+  // ─── Auth gate: only a logged-in CRM user can export. ───
+  const cookieStore = await cookies()
+  const jwt = cookieStore.get(SESSION_COOKIE_NAME)?.value
+  const session = await verifySession(jwt)
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const [config, marquee, projects, stats, stack, socials] = await Promise.all([
     db.siteConfig.findUnique({ where: { id: 'singleton' } }),
     db.marqueeItem.findMany({ orderBy: { order: 'asc' } }),
