@@ -30,9 +30,14 @@
       antialias: true,
       alpha: true,
       powerPreference: "high-performance",
+      // Reduce jank by allowing the browser to throttle the canvas when
+      // offscreen or when the tab is backgrounded.
+      failIfMajorPerformanceCaveat: false,
     });
     renderer.setClearColor(0x000000, 0); // transparent so CSS bg shows through
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // Cap pixel ratio at 1.75 — anything higher burns GPU fill rate for
+    // no visible quality gain on the translucent shapes, and causes jank.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
 
     // --- Scene & camera ---
     const scene = new THREE.Scene();
@@ -138,13 +143,26 @@
     const target = { x: 0, y: 0 };
     const curr = { x: 0, y: 0 };
     if (!isTouch) {
+      // Throttle pointer reads to once per frame via rAF — raw mousemove
+      // fires up to 1000x/s on high-rate mice and causes jank.
+      let pointerPending = false;
+      let lastPointerX = 0, lastPointerY = 0;
       window.addEventListener("mousemove", (e) => {
-        target.x = (e.clientX / window.innerWidth - 0.5);
-        target.y = (e.clientY / window.innerHeight - 0.5);
-      });
+        lastPointerX = e.clientX;
+        lastPointerY = e.clientY;
+        if (!pointerPending) {
+          pointerPending = true;
+          requestAnimationFrame(() => {
+            target.x = (lastPointerX / window.innerWidth - 0.5);
+            target.y = (lastPointerY / window.innerHeight - 0.5);
+            pointerPending = false;
+          });
+        }
+      }, { passive: true });
     }
 
-    // --- Resize ---
+    // --- Resize (debounced via rAF) ---
+    let resizePending = false;
     function resize() {
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
@@ -153,20 +171,55 @@
       camera.updateProjectionMatrix();
     }
     resize();
-    window.addEventListener("resize", resize);
+    window.addEventListener("resize", () => {
+      if (!resizePending) {
+        resizePending = true;
+        requestAnimationFrame(() => {
+          resize();
+          resizePending = false;
+        });
+      }
+    }, { passive: true });
+
+    // --- Visibility tracking ---
+    // Pause the render loop when the hero canvas is offscreen (e.g. user
+    // has scrolled down to About/Stack/Contact). Saves GPU and prevents
+    // background jank from competing with scroll-reveal animations.
+    let isVisible = true;
+    if ("IntersectionObserver" in window) {
+      const visIo = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => { isVisible = e.isIntersecting; });
+        },
+        { threshold: 0 }
+      );
+      visIo.observe(canvas);
+    }
+
+    // Also pause when the tab is backgrounded.
+    document.addEventListener("visibilitychange", () => {
+      isVisible = !document.hidden;
+    });
 
     // --- Animation loop ---
     const clock = new THREE.Clock();
+    let rafId = 0;
     function animate() {
+      rafId = requestAnimationFrame(animate);
+
+      // Skip rendering when offscreen or tab hidden — saves a full GPU
+      // frame's worth of work per tick.
+      if (!isVisible) return;
+
       const t = clock.getElapsedTime();
 
-      // Smooth parallax follow
-      curr.x += (target.x - curr.x) * 0.05;
-      curr.y += (target.y - curr.y) * 0.05;
+      // Smooth parallax follow (slightly lower lerp = smoother, less jittery)
+      curr.x += (target.x - curr.x) * 0.045;
+      curr.y += (target.y - curr.y) * 0.045;
       group.rotation.y = curr.x * 0.6 + t * 0.04;
       group.rotation.x = curr.y * 0.4;
-      camera.position.x += (curr.x * 1.5 - camera.position.x) * 0.05;
-      camera.position.y += (-curr.y * 1.0 - camera.position.y) * 0.05;
+      camera.position.x += (curr.x * 1.5 - camera.position.x) * 0.045;
+      camera.position.y += (-curr.y * 1.0 - camera.position.y) * 0.045;
       camera.lookAt(0, 0, 0);
 
       // Per-shape spin + float
@@ -180,7 +233,6 @@
       points.rotation.y = t * 0.02;
 
       renderer.render(scene, camera);
-      requestAnimationFrame(animate);
     }
     animate();
   }
@@ -210,15 +262,39 @@
 
   /* ========================================================
      3. SCROLL PROGRESS + NAV STATE
+     RAF-throttled for perfectly smooth, jank-free tracking.
      ======================================================== */
   function initScrollUI() {
     const bar = document.querySelector(".scroll-progress span");
     const nav = document.getElementById("nav");
-    function onScroll() {
-      const st = window.scrollY || document.documentElement.scrollTop;
+    let ticking = false;
+    let lastScrollY = 0;
+
+    function update() {
+      ticking = false;
+      const st = lastScrollY;
       const max = document.documentElement.scrollHeight - window.innerHeight;
-      if (bar) bar.style.width = (max > 0 ? (st / max) * 100 : 0) + "%";
+      // Use scaleX + translate3d for GPU-composited updates (cheaper than
+      // animating `width`, which triggers layout on every frame).
+      if (bar) {
+        const pct = max > 0 ? st / max : 0;
+        bar.style.transform = "translate3d(0, 0, 0) scaleX(" + pct + ")";
+      }
       if (nav) nav.classList.toggle("is-scrolled", st > 30);
+    }
+
+    function onScroll() {
+      lastScrollY = window.scrollY || document.documentElement.scrollTop;
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    }
+
+    // Set initial width to 100% so scaleX works correctly.
+    if (bar) {
+      bar.style.width = "100%";
+      bar.style.transform = "translate3d(0, 0, 0) scaleX(0)";
     }
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -227,45 +303,104 @@
   /* ========================================================
      4. MAGNETIC ELEMENTS
      Elements tagged [data-magnetic] drift toward the cursor.
+     Uses a per-element rAF lerp loop for buttery-smooth following
+     instead of instant snapping.
      ======================================================== */
   function initMagnetic() {
     if (prefersReducedMotion || isTouch) return;
     const items = document.querySelectorAll("[data-magnetic]");
     const strength = 0.35;
+    const lerp = 0.18; // lower = smoother/slower follow
+
     items.forEach((el) => {
+      let targetX = 0, targetY = 0;
+      let currentX = 0, currentY = 0;
+      let rafId = 0;
+      let hovering = false;
+
+      function loop() {
+        // Ease current toward target every frame.
+        currentX += (targetX - currentX) * lerp;
+        currentY += (targetY - currentY) * lerp;
+        // Use translate3d for GPU compositing.
+        el.style.transform = `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, 0)`;
+
+        // Keep looping while hovering OR while still settling back to center.
+        if (hovering || Math.abs(currentX) > 0.1 || Math.abs(currentY) > 0.1) {
+          rafId = requestAnimationFrame(loop);
+        } else {
+          el.style.transform = "";
+          rafId = 0;
+        }
+      }
+
       el.addEventListener("mousemove", (e) => {
         const r = el.getBoundingClientRect();
         const x = e.clientX - (r.left + r.width / 2);
         const y = e.clientY - (r.top + r.height / 2);
-        el.style.transform = `translate(${x * strength}px, ${y * strength}px)`;
-      });
+        targetX = x * strength;
+        targetY = y * strength;
+        hovering = true;
+        if (!rafId) loop();
+      }, { passive: true });
+
       el.addEventListener("mouseleave", () => {
-        el.style.transform = "";
+        hovering = false;
+        targetX = 0;
+        targetY = 0;
+        if (!rafId) loop();
       });
     });
   }
 
   /* ========================================================
      5. TILT CARDS (with pointer-tracked glow)
+     Uses a per-card rAF lerp loop for smooth 3D rotation that eases
+     toward the target angle instead of snapping.
      ======================================================== */
   function initTilt() {
     if (prefersReducedMotion || isTouch) return;
     const cards = document.querySelectorAll(".tilt");
+    const max = 8; // max degrees
+    const lerp = 0.15; // lower = smoother rotation follow
+
     cards.forEach((card) => {
-      const max = 8; // max degrees
+      let targetRx = 0, targetRy = 0;
+      let currentRx = 0, currentRy = 0;
+      let rafId = 0;
+      let hovering = false;
+
+      function loop() {
+        currentRx += (targetRx - currentRx) * lerp;
+        currentRy += (targetRy - currentRy) * lerp;
+        card.style.transform =
+          `perspective(900px) rotateX(${currentRx.toFixed(2)}deg) rotateY(${currentRy.toFixed(2)}deg) translate3d(0, -4px, 0)`;
+
+        if (hovering || Math.abs(currentRx) > 0.05 || Math.abs(currentRy) > 0.05) {
+          rafId = requestAnimationFrame(loop);
+        } else {
+          card.style.transform = "";
+          rafId = 0;
+        }
+      }
+
       card.addEventListener("mousemove", (e) => {
         const r = card.getBoundingClientRect();
         const px = (e.clientX - r.left) / r.width;
         const py = (e.clientY - r.top) / r.height;
-        const ry = (px - 0.5) * (max * 2);
-        const rx = -(py - 0.5) * (max * 2);
-        card.style.transform =
-          `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px)`;
+        targetRy = (px - 0.5) * (max * 2);
+        targetRx = -(py - 0.5) * (max * 2);
         card.style.setProperty("--mx", px * 100 + "%");
         card.style.setProperty("--my", py * 100 + "%");
-      });
+        hovering = true;
+        if (!rafId) loop();
+      }, { passive: true });
+
       card.addEventListener("mouseleave", () => {
-        card.style.transform = "";
+        hovering = false;
+        targetRx = 0;
+        targetRy = 0;
+        if (!rafId) loop();
       });
     });
   }
@@ -307,24 +442,50 @@
 
   /* ========================================================
      7. CUSTOM CURSOR
+     Smooth lerp follow with translate3d for GPU compositing.
      ======================================================== */
   function initCursor() {
     if (prefersReducedMotion || isTouch) return;
     const cursor = document.querySelector(".cursor");
     if (!cursor) return;
     let mx = 0, my = 0, cx = 0, cy = 0;
+    let active = false;
+
+    // Throttle mousemove reads to once per frame.
+    let pointerPending = false;
+    let lastX = 0, lastY = 0;
     window.addEventListener("mousemove", (e) => {
-      mx = e.clientX; my = e.clientY;
-      cursor.classList.add("is-active");
+      lastX = e.clientX;
+      lastY = e.clientY;
+      if (!active) {
+        cursor.classList.add("is-active");
+        active = true;
+      }
+      if (!pointerPending) {
+        pointerPending = true;
+        requestAnimationFrame(() => {
+          mx = lastX;
+          my = lastY;
+          pointerPending = false;
+        });
+      }
+    }, { passive: true });
+
+    document.addEventListener("mouseleave", () => {
+      cursor.classList.remove("is-active");
+      active = false;
     });
-    document.addEventListener("mouseleave", () => cursor.classList.remove("is-active"));
+
     function loop() {
-      cx += (mx - cx) * 0.2;
-      cy += (my - cy) * 0.2;
-      cursor.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+      // Slightly lower lerp (0.18) for smoother, less jittery trailing.
+      cx += (mx - cx) * 0.18;
+      cy += (my - cy) * 0.18;
+      // translate3d triggers GPU compositing — much cheaper than translate().
+      cursor.style.transform = `translate3d(${cx.toFixed(2)}px, ${cy.toFixed(2)}px, 0) translate3d(-50%, -50%, 0)`;
       requestAnimationFrame(loop);
     }
     loop();
+
     // Grow over interactive elements
     document.querySelectorAll("a, button, .tilt").forEach((el) => {
       el.addEventListener("mouseenter", () => cursor.classList.add("is-hover"));
