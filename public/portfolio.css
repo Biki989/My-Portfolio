@@ -1,7 +1,4 @@
-// AUTO-GENERATED from the original portfolio style.css.
-// Do not edit by hand — re-run scripts/gen-preview-css.ts to regenerate.
-
-export const PREVIEW_CSS = `/* ============================================================
+/* ============================================================
    Alex Rivera — Portfolio
    Aesthetic: light + airy editorial with a living 3D hero
    background (Three.js) for depth and motion.
@@ -499,4 +496,3 @@ ul { list-style: none; }
       transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
   .reveal { opacity: 1; transform: none; }
 }
-`

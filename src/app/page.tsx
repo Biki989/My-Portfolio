@@ -114,8 +114,9 @@ export default async function Home({
   const nonce = (await headers()).get('x-nonce') ?? undefined
 
   // Compute the request origin (e.g. https://biki-portfolio.vercel.app) so
-  // the CRM's live-preview iframe can load /preview-boot.js via an absolute
-  // URL (srcDoc iframes have no base URL, so relative URLs don't resolve).
+  // the CRM's live-preview iframe can load /portfolio.css and /portfolio.js
+  // via absolute URLs (srcDoc iframes have no base URL, so relative URLs
+  // don't resolve).
   const headerList = await headers()
   const proto = headerList.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
   const host = headerList.get('x-forwarded-host') || headerList.get('host') || 'localhost:3000'
@@ -136,7 +137,7 @@ export default async function Home({
             dangerouslySetInnerHTML={{ __html: JSON.stringify(node) }}
           />
         ))}
-        <PortfolioView data={data} nonce={nonce} />
+        <PortfolioView data={data} />
       </>
     )
   }

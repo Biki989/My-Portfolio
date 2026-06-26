@@ -3,7 +3,6 @@
 import { useMemo } from 'react'
 import { usePortfolio } from '@/lib/portfolio-store'
 import type { PortfolioData } from '@/lib/portfolio-types'
-import { PREVIEW_CSS } from '@/lib/preview-css'
 
 function escapeHtml(s: string) {
   return (s ?? '')
@@ -18,10 +17,10 @@ function safeRich(s: string) {
     .replace(/&lt;(\/?)(strong|em|br|span|code|b|i)&gt;/g, '<$1$2>')
 }
 
-// The preview boot script is served as an EXTERNAL file at /preview-boot.js
-// (see public/preview-boot.js). This avoids inline scripts in the srcDoc
-// iframe, which is required for a nonce-based CSP with no 'unsafe-inline'.
-// We load it via an absolute URL because srcDoc iframes have no base URL.
+// The preview iframe loads the SAME external CSS (/portfolio.css) and JS
+// (/portfolio.js) as the live public portfolio — so the CRM preview shows
+// exactly what visitors see. Both are loaded via absolute URLs because
+// srcDoc iframes have no base URL, so relative URLs don't resolve.
 
 function buildPreviewHtml(d: PortfolioData, origin: string): string {
   const c = d.config
@@ -66,8 +65,6 @@ function buildPreviewHtml(d: PortfolioData, origin: string): string {
     return `        <li><a href="${escapeHtml(s.url)}"${target} data-magnetic>${escapeHtml(s.label)}</a></li>`
   }).join('\n')
 
-  const year = new Date().getFullYear()
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,10 +74,9 @@ function buildPreviewHtml(d: PortfolioData, origin: string): string {
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="${escapeHtml(origin)}/portfolio.css" />
 <style>
-${PREVIEW_CSS}
-
-/* Preview-only tweaks: keep all animations, just allow scrolling inside the iframe */
+/* Preview-only tweaks: just scrollbar styling */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-2); }
 ::-webkit-scrollbar-thumb { background: var(--ink-mute); border-radius: 4px; }
@@ -198,12 +194,12 @@ ${socialItems}
   </main>
 
   <footer class="footer">
-    <span>© ${year} ${escapeHtml(c.footerName)}</span>
+    <span>© <span id="year"></span> ${escapeHtml(c.footerName)}</span>
     <span class="footer__meta">${escapeHtml(c.footerMeta)}</span>
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="${escapeHtml(origin)}/preview-boot.js"></script>
+  <script src="${escapeHtml(origin)}/portfolio.js"></script>
 </body>
 </html>`
 }
