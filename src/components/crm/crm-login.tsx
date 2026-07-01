@@ -100,9 +100,8 @@ export function CrmLogin() {
           </form>
         </div>
 
-        <p className="text-xs text-center text-muted-foreground mt-6 leading-relaxed">
-          Only the portfolio owner can sign in.<br />
-          Credentials are set in the server's <code className="font-mono">.env</code> file.
+        <p className="text-xs text-center text-muted-foreground mt-6">
+          Admin access only.
         </p>
       </div>
     </div>

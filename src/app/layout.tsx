@@ -17,16 +17,14 @@ const geistMono = Geist_Mono({
 const SITE_URL = (process.env.SITE_URL ?? "https://biki-portfolio.vercel.app").replace(/\/$/, "");
 
 // ─── Default site-wide SEO ───
-// The public portfolio overrides title/description at request time via
-// generateMetadata() in src/app/page.tsx (using DB-stored values).
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Biki Kalita — ML Engineer & Software Engineer | Machine Learning, Data Science",
+    default: "Biki Kalita — ML Engineer",
     template: "%s · Biki Kalita",
   },
   description:
-    "Biki Kalita is an ML Engineer and Software Engineer specializing in machine learning, data science, predictive modeling, and production-ready ML APIs. Available for select ML and software engineering work.",
+    "ML engineer based in Assam, India. I build and deploy machine learning systems — XGBoost, scikit-learn, FastAPI, Docker. Open to work.",
   keywords: [
     // Primary role keywords
     "ML Engineer",
@@ -75,9 +73,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "Biki Kalita — ML Engineer",
-    title: "Biki Kalita — ML Engineer & Software Engineer",
+    title: "Biki Kalita — ML Engineer",
     description:
-      "Machine Learning engineer building production-ready ML workflows, predictive models, and inference APIs. Available for select ML and software engineering work.",
+      "ML engineer based in Assam, India. I build and deploy machine learning systems — XGBoost, scikit-learn, FastAPI, Docker. Open to work.",
     firstName: "Biki",
     lastName: "Kalita",
     username: "Biki989",
@@ -92,9 +90,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Biki Kalita — ML Engineer & Software Engineer",
+    title: "Biki Kalita — ML Engineer",
     description:
-      "Machine Learning engineer building production-ready ML workflows, predictive models, and inference APIs.",
+      "ML engineer based in Assam, India. I build and deploy machine learning systems.",
     images: ["/icon.svg"],
   },
   robots: {

@@ -165,7 +165,7 @@ export function CrmDashboard({
             <div className="flex flex-col leading-tight min-w-0">
               <span className="text-sm font-medium truncate">Portfolio CRM</span>
               <span className="text-[10px] text-muted-foreground truncate hidden sm:block">
-                Edit anything · Save · Export back to HTML
+                Edit your portfolio
               </span>
             </div>
           </div>
@@ -295,9 +295,7 @@ export function CrmDashboard({
           </ul>
           <div className="p-3 border-t text-[11px] text-muted-foreground leading-snug hidden md:block">
             <p>
-              <strong className="text-foreground">Tip:</strong> Every edit updates the live
-              preview instantly. Hit <em>Save</em> to persist, or <em>Export HTML</em> to
-              download a standalone index.html for your static site.
+              Edits show in the preview instantly. Click <strong className="text-foreground">Save</strong> to publish to the live site.
             </p>
           </div>
         </nav>

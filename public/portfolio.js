@@ -1,10 +1,5 @@
 /* ============================================================
-   Alex Rivera — Portfolio interactions
-   - Three.js 3D animated hero background (glassy shapes + particles)
-   - Scroll-reveal (IntersectionObserver)
-   - Magnetic buttons + tilt cards
-   - Animated stat counters
-   - Custom cursor
+   Portfolio interactions
    ============================================================ */
 
 (function () {

@@ -22,21 +22,20 @@ export const dynamic = 'force-dynamic' // always read fresh DB content
 const SITE_URL = (process.env.SITE_URL ?? 'https://biki-portfolio.vercel.app').replace(/\/$/, '')
 
 // Dynamic <title> and <meta description> driven by the CRM-edited content.
-// Also builds a keyword-rich title for SEO.
 export async function generateMetadata(): Promise<Metadata> {
   const data = await loadPortfolio()
   const c = data.config
   return {
-    title: c.seoTitle || 'Biki Kalita — ML Engineer & Software Engineer | Machine Learning, Data Science',
+    title: c.seoTitle || 'Biki Kalita — ML Engineer',
     description:
       c.seoDescription ||
-      'ML Engineer and Software Engineer specializing in machine learning, data science, predictive modeling, and production-ready ML APIs.',
+      'ML engineer based in Assam, India. I build and deploy machine learning systems.',
     alternates: { canonical: '/' },
     openGraph: {
       title: c.seoTitle || 'Biki Kalita — ML Engineer',
       description:
         c.seoDescription ||
-        'Machine Learning engineer building production-ready ML workflows, predictive models, and inference APIs.',
+        'ML engineer based in Assam, India. I build and deploy machine learning systems.',
       url: SITE_URL,
       type: 'profile',
       images: [{ url: '/icon.svg', width: 512, height: 512, alt: c.brandName || 'Biki Kalita' }],
