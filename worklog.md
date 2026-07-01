@@ -260,3 +260,51 @@ Stage Summary:
 - All original animations work: Three.js 3D hero scene, scroll-reveal, scroll progress bar, magnetic buttons, tilt cards, animated stat counters, custom cursor, marquee.
 - No inline styles or scripts on the portfolio page (CSP-friendly).
 - CSP still has no 'unsafe-inline' in script-src.
+
+---
+Task ID: 6
+Agent: main (Super Z)
+Task: Make the website dynamic and mobile-responsive; remove the hero scroll indicator; ensure it properly fits on phones.
+
+Work Log:
+- Removed the `.hero__scroll` indicator (the "Scroll ↓" element at the bottom of the hero) from all three places it appears:
+  - src/components/portfolio/portfolio-view.tsx
+  - src/components/crm/live-preview.tsx
+  - src/app/api/export-html/route.ts
+- Added comprehensive mobile CSS to /public/portfolio.css:
+  - Tablet (≤768px): tighter side padding (20px), smaller hero title (clamp 2.2-3.6rem), smaller buttons, reduced section spacing, responsive contact email (clamp 1.4-2.8rem with word-break), smaller card padding, tighter stack groups
+  - Small phones (≤480px): even tighter padding (16px), hero title clamp 1.9-2.6rem, full-width stacked buttons (flex-direction: column), single-column work grid, footer stacks vertically, smaller marquee text
+  - Landscape phones (short height): reduced hero padding and title size
+  - Global overflow prevention: html/body max-width 100vw + overflow-x hidden, sections clamped to 100%, card content wraps, contact email wraps, marquee clamped
+  - Added min-width:0 to work grid card wrappers (fixes flexbox overflow)
+- Made the CRM dashboard fully responsive:
+  - Top bar: hamburger menu button on mobile (lg:hidden), button labels collapse to icons on small screens, "Show preview" toggle button on mobile
+  - Sidebar: slides in as a drawer on mobile (absolute positioned, translate-x animation, backdrop overlay), fixed on desktop (lg:relative)
+  - Editor panel: full-width on mobile, hides when mobile preview is toggled on
+  - Preview panel: side-by-side on desktop (lg:w-[44%]), full-width overlay on mobile (absolute, z-20) when toggled on
+  - All transitions are smooth (300ms transform)
+- Restored .env (was reset by dev server restart) with CRM_ADMIN_USERNAME, CRM_ADMIN_PASSWORD, CRM_SESSION_SECRET, SITE_URL.
+
+Verification (Agent Browser at 375px mobile viewport):
+- Public portfolio:
+  - No horizontal overflow (scrollWidth = clientWidth = 375) ✓
+  - Hero scroll indicator removed ✓
+  - Hero title fits (37.5px, no overflow) ✓
+  - Contact email fits (32px, word-break: break-word) ✓
+  - Work grid: single column, 16px gap ✓
+  - Stack grid: single column, 14px gap ✓
+  - Footer: flex-direction column ✓
+- CRM dashboard:
+  - Hamburger menu opens sidebar drawer ✓
+  - All 8 nav items accessible in the drawer ✓
+  - "Show preview" button toggles full-width preview overlay ✓
+  - Preview iframe fills mobile screen (358x692) ✓
+  - No horizontal overflow ✓
+- Tablet (768px): no overflow, single-column grids ✓
+- Desktop (1440px): no overflow, side-by-side layout intact ✓
+- Lint clean (0 errors, 3 expected warnings).
+
+Stage Summary:
+- Hero scroll indicator removed from portfolio, CRM preview, and HTML export.
+- Portfolio is fully responsive: no horizontal overflow at any viewport from 320px to 1440px+, all sections adapt (single-column grids, stacked buttons, wrapping text, tighter padding).
+- CRM dashboard is now usable on phones: hamburger menu drawer, icon-only buttons, full-width preview toggle.

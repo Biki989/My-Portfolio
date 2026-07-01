@@ -134,11 +134,6 @@ function buildHtml(c: Record<string, string>, data: {
           <a href="#contact" class="btn btn--ghost" data-magnetic>${escapeHtml(c.heroSecondaryBtn ?? '')}</a>
         </div>
       </div>
-
-      <a href="#work" class="hero__scroll reveal" style="--d:.85s" aria-label="Scroll to work">
-        <span>Scroll</span>
-        <span class="hero__scrollline"></span>
-      </a>
     </section>
 
     <section class="marquee" aria-hidden="true">

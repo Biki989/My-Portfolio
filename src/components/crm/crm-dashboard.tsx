@@ -19,7 +19,7 @@ import {
   Sparkles, Layout, Sliders, FolderKanban, User, Layers,
   Mail, Save, Download, RotateCcw, Monitor, Smartphone,
   CheckCircle2, Loader2, Eye, EyeOff, PanelRightClose, PanelRight,
-  ExternalLink, LogOut, ShieldCheck
+  ExternalLink, LogOut, ShieldCheck, Menu, X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -55,6 +55,9 @@ export function CrmDashboard({
   const [active, setActive] = useState<Section>('hero')
   const [previewWidth, setPreviewWidth] = useState<'desktop' | 'mobile'>('desktop')
   const [showPreview, setShowPreview] = useState(true)
+  // Mobile UI state: sidebar drawer + mobile preview toggle
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [mobilePreview, setMobilePreview] = useState(false)
 
   const loading = usePortfolio((s) => s.loading)
   const saving = usePortfolio((s) => s.saving)
@@ -143,69 +146,117 @@ export function CrmDashboard({
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
       {/* ─── Top bar ─── */}
-      <header className="h-14 border-b bg-background/95 backdrop-blur flex items-center justify-between px-4 gap-3 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
+      <header className="h-14 border-b bg-background/95 backdrop-blur flex items-center justify-between px-3 sm:px-4 gap-2 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Mobile: hamburger to open sidebar */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden size-9"
+            onClick={() => setSidebarOpen(true)}
+            title="Open menu"
+          >
+            <Menu className="size-5" />
+          </Button>
           <div className="flex items-center gap-2">
-            <div className="size-8 rounded-md bg-foreground text-background grid place-items-center font-mono text-xs font-semibold">
+            <div className="size-8 rounded-md bg-foreground text-background grid place-items-center font-mono text-xs font-semibold shrink-0">
               CRM
             </div>
             <div className="flex flex-col leading-tight min-w-0">
               <span className="text-sm font-medium truncate">Portfolio CRM</span>
-              <span className="text-[10px] text-muted-foreground truncate">
+              <span className="text-[10px] text-muted-foreground truncate hidden sm:block">
                 Edit anything · Save · Export back to HTML
               </span>
             </div>
           </div>
           {dirty && (
-            <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50">
-              Unsaved changes
+            <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 hidden sm:inline-flex">
+              Unsaved
             </Badge>
           )}
           {!dirty && lastSavedAt && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className="text-xs text-muted-foreground items-center gap-1 hidden md:flex">
               <CheckCircle2 className="size-3 text-emerald-500" />
-              All changes saved
+              Saved
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground hidden md:inline-flex items-center gap-1.5 mr-1">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <span className="text-xs text-muted-foreground hidden lg:inline-flex items-center gap-1.5 mr-1">
             <span className="size-1.5 rounded-full bg-emerald-500"></span>
             Signed in as <strong className="font-medium text-foreground">{username}</strong>
           </span>
-          <a href="/" target="_blank" rel="noopener noreferrer">
+          <a href="/" target="_blank" rel="noopener noreferrer" className="hidden sm:block">
             <Button variant="ghost" size="sm">
               <ExternalLink className="size-4 mr-1.5" />
-              View portfolio
+              <span className="hidden md:inline">View portfolio</span>
+              <span className="md:hidden">View</span>
             </Button>
           </a>
-          <Button variant="ghost" size="sm" onClick={handleReset} disabled={!dirty || saving}>
+          <Button variant="ghost" size="sm" onClick={handleReset} disabled={!dirty || saving} className="hidden sm:inline-flex">
             <RotateCcw className="size-4 mr-1.5" />
-            Revert
+            <span className="hidden md:inline">Revert</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportHtml} disabled={saving}>
+          <Button variant="outline" size="sm" onClick={handleExportHtml} disabled={saving} className="hidden sm:inline-flex">
             <Download className="size-4 mr-1.5" />
-            Export HTML
+            <span className="hidden md:inline">Export HTML</span>
+            <span className="md:hidden">Export</span>
           </Button>
           <Button size="sm" onClick={handleSave} disabled={saving || !dirty}>
             {saving ? (
-              <Loader2 className="size-4 mr-1.5 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
               <Save className="size-4 mr-1.5" />
             )}
-            {saving ? 'Saving…' : 'Save'}
+            <span className="hidden sm:inline">{saving ? 'Saving…' : 'Save'}</span>
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleLogout} title="Sign out">
+          {/* Mobile: toggle preview */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden size-9"
+            onClick={() => setMobilePreview(!mobilePreview)}
+            title={mobilePreview ? 'Hide preview' : 'Show preview'}
+          >
+            {mobilePreview ? <PanelRightClose className="size-5" /> : <PanelRight className="size-5" />}
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleLogout} title="Sign out" className="size-9">
             <LogOut className="size-4" />
           </Button>
         </div>
       </header>
 
       {/* ─── Body: sidebar + editor + preview ─── */}
-      <div className="flex-1 flex min-h-0">
-        {/* Sidebar */}
-        <nav className="w-56 border-r bg-muted/30 flex flex-col shrink-0">
+      <div className="flex-1 flex min-h-0 relative">
+        {/* Mobile sidebar backdrop */}
+        {sidebarOpen && (
+          <div
+            className="absolute inset-0 bg-black/40 z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Sidebar — fixed on desktop, drawer on mobile */}
+        <nav
+          className={cn(
+            'border-r bg-muted/30 flex-col shrink-0 z-40',
+            'lg:flex lg:w-56 lg:relative',
+            // Mobile: drawer that slides in from the left
+            'absolute top-0 bottom-0 w-72 max-w-[80vw] transition-transform duration-300',
+            sidebarOpen ? 'translate-x-0 flex' : '-translate-x-full lg:translate-x-0 lg:flex',
+          )}
+        >
+          {/* Mobile close button */}
+          <div className="lg:hidden flex justify-end p-2">
+            <Button
+              variant="ghost" size="icon"
+              className="size-8"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
           <ul className="p-2 space-y-0.5 flex-1 overflow-y-auto">
             {NAV.map((n) => {
               const Icon = n.icon
@@ -213,7 +264,11 @@ export function CrmDashboard({
               return (
                 <li key={n.id}>
                   <button
-                    onClick={() => setActive(n.id)}
+                    onClick={() => {
+                      setActive(n.id)
+                      setSidebarOpen(false)
+                      setMobilePreview(false)
+                    }}
                     className={cn(
                       'w-full flex items-start gap-3 rounded-md px-3 py-2 text-left transition-colors',
                       isActive
@@ -238,7 +293,7 @@ export function CrmDashboard({
               )
             })}
           </ul>
-          <div className="p-3 border-t text-[11px] text-muted-foreground leading-snug">
+          <div className="p-3 border-t text-[11px] text-muted-foreground leading-snug hidden lg:block">
             <p>
               <strong className="text-foreground">Tip:</strong> Every edit updates the live
               preview instantly. Hit <em>Save</em> to persist, or <em>Export HTML</em> to
@@ -247,26 +302,40 @@ export function CrmDashboard({
           </div>
         </nav>
 
-        {/* Editor panel */}
-        <section className="flex-1 min-w-0 overflow-y-auto bg-background">
-          <div className="max-w-2xl mx-auto p-6 pb-24">
-            <div className="mb-5 flex items-baseline justify-between">
-              <h2 className="text-xl font-semibold">{activeNav.label}</h2>
-              <span className="text-xs text-muted-foreground">{activeNav.hint}</span>
+        {/* Editor panel — full width on mobile, flex-1 on desktop */}
+        <section
+          className={cn(
+            'flex-1 min-w-0 overflow-y-auto bg-background',
+            // On mobile, hide the editor when preview is toggled on
+            mobilePreview ? 'hidden lg:block' : 'block',
+          )}
+        >
+          <div className="max-w-2xl mx-auto p-4 sm:p-6 pb-24">
+            <div className="mb-5 flex items-baseline justify-between gap-2">
+              <h2 className="text-lg sm:text-xl font-semibold truncate">{activeNav.label}</h2>
+              <span className="text-xs text-muted-foreground hidden sm:block">{activeNav.hint}</span>
             </div>
             {editor}
           </div>
         </section>
 
-        {/* Preview panel */}
+        {/* Preview panel — side-by-side on desktop, full-width overlay on mobile */}
         {showPreview && (
-          <aside className="w-[44%] min-w-[420px] border-l bg-muted/20 flex flex-col shrink-0">
-            <div className="h-12 border-b flex items-center justify-between px-3 gap-2 bg-background">
+          <aside
+            className={cn(
+              'border-l bg-muted/20 flex-col shrink-0',
+              'lg:flex lg:w-[44%] lg:min-w-[420px] lg:relative',
+              // Mobile: full-width overlay when toggled on
+              'absolute top-0 bottom-0 left-0 right-0 z-20',
+              mobilePreview ? 'flex' : 'hidden lg:flex',
+            )}
+          >
+            <div className="h-12 border-b flex items-center justify-between px-3 gap-2 bg-background shrink-0">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Eye className="size-3.5" />
                 <span className="font-medium">Live preview</span>
-                <span className="text-muted-foreground/60">·</span>
-                <span>updates as you type</span>
+                <span className="text-muted-foreground/60 hidden sm:inline">·</span>
+                <span className="hidden sm:inline">updates as you type</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="flex rounded-md border bg-background">
@@ -296,14 +365,14 @@ export function CrmDashboard({
                 <Button
                   size="sm" variant="ghost"
                   onClick={() => setShowPreview(false)}
-                  className="h-7 px-2"
+                  className="h-7 px-2 hidden lg:inline-flex"
                   title="Hide preview"
                 >
                   <PanelRightClose className="size-3.5" />
                 </Button>
               </div>
             </div>
-            <div className="flex-1 min-h-0 p-3">
+            <div className="flex-1 min-h-0 p-2 sm:p-3">
               <LivePreview width={previewWidth} origin={origin} />
             </div>
           </aside>
@@ -312,10 +381,11 @@ export function CrmDashboard({
           <Button
             size="sm" variant="outline"
             onClick={() => setShowPreview(true)}
-            className="absolute right-4 top-16"
+            className="absolute right-4 top-16 z-20"
           >
             <PanelRight className="size-4 mr-1.5" />
-            Show preview
+            <span className="hidden sm:inline">Show preview</span>
+            <span className="sm:hidden">Preview</span>
           </Button>
         )}
       </div>

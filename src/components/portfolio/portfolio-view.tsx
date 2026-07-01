@@ -96,11 +96,6 @@ export function PortfolioView({ data }: { data: PortfolioData }) {
               <a href="#contact" className="btn btn--ghost" data-magnetic>{c.heroSecondaryBtn}</a>
             </div>
           </div>
-
-          <a href="#work" className="hero__scroll reveal" style={{ '--d': '.85s' } as React.CSSProperties} aria-label="Scroll to work">
-            <span>Scroll</span>
-            <span className="hero__scrollline"></span>
-          </a>
         </section>
 
         {/* ─── MARQUEE ─── */}
