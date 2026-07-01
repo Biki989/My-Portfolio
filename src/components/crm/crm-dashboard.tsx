@@ -152,7 +152,7 @@ export function CrmDashboard({
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden size-9"
+            className="md:hidden size-9"
             onClick={() => setSidebarOpen(true)}
             title="Open menu"
           >
@@ -183,7 +183,7 @@ export function CrmDashboard({
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
-          <span className="text-xs text-muted-foreground hidden lg:inline-flex items-center gap-1.5 mr-1">
+          <span className="text-xs text-muted-foreground hidden md:inline-flex items-center gap-1.5 mr-1">
             <span className="size-1.5 rounded-full bg-emerald-500"></span>
             Signed in as <strong className="font-medium text-foreground">{username}</strong>
           </span>
@@ -215,7 +215,7 @@ export function CrmDashboard({
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden size-9"
+            className="md:hidden size-9"
             onClick={() => setMobilePreview(!mobilePreview)}
             title={mobilePreview ? 'Hide preview' : 'Show preview'}
           >
@@ -232,7 +232,7 @@ export function CrmDashboard({
         {/* Mobile sidebar backdrop */}
         {sidebarOpen && (
           <div
-            className="absolute inset-0 bg-black/40 z-30 lg:hidden"
+            className="absolute inset-0 bg-black/40 z-30 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -241,14 +241,14 @@ export function CrmDashboard({
         <nav
           className={cn(
             'border-r bg-muted/30 flex-col shrink-0 z-40',
-            'lg:flex lg:w-56 lg:relative',
+            'md:flex md:w-56 md:relative',
             // Mobile: drawer that slides in from the left
             'absolute top-0 bottom-0 w-72 max-w-[80vw] transition-transform duration-300',
-            sidebarOpen ? 'translate-x-0 flex' : '-translate-x-full lg:translate-x-0 lg:flex',
+            sidebarOpen ? 'translate-x-0 flex' : '-translate-x-full md:translate-x-0 md:flex',
           )}
         >
           {/* Mobile close button */}
-          <div className="lg:hidden flex justify-end p-2">
+          <div className="md:hidden flex justify-end p-2">
             <Button
               variant="ghost" size="icon"
               className="size-8"
@@ -293,7 +293,7 @@ export function CrmDashboard({
               )
             })}
           </ul>
-          <div className="p-3 border-t text-[11px] text-muted-foreground leading-snug hidden lg:block">
+          <div className="p-3 border-t text-[11px] text-muted-foreground leading-snug hidden md:block">
             <p>
               <strong className="text-foreground">Tip:</strong> Every edit updates the live
               preview instantly. Hit <em>Save</em> to persist, or <em>Export HTML</em> to
@@ -307,7 +307,7 @@ export function CrmDashboard({
           className={cn(
             'flex-1 min-w-0 overflow-y-auto bg-background',
             // On mobile, hide the editor when preview is toggled on
-            mobilePreview ? 'hidden lg:block' : 'block',
+            mobilePreview ? 'hidden md:block' : 'block',
           )}
         >
           <div className="max-w-2xl mx-auto p-4 sm:p-6 pb-24">
@@ -324,10 +324,10 @@ export function CrmDashboard({
           <aside
             className={cn(
               'border-l bg-muted/20 flex-col shrink-0',
-              'lg:flex lg:w-[44%] lg:min-w-[420px] lg:relative',
+              'md:flex md:w-[44%] md:min-w-[420px] md:relative',
               // Mobile: full-width overlay when toggled on
               'absolute top-0 bottom-0 left-0 right-0 z-20',
-              mobilePreview ? 'flex' : 'hidden lg:flex',
+              mobilePreview ? 'flex' : 'hidden md:flex',
             )}
           >
             <div className="h-12 border-b flex items-center justify-between px-3 gap-2 bg-background shrink-0">
@@ -365,7 +365,7 @@ export function CrmDashboard({
                 <Button
                   size="sm" variant="ghost"
                   onClick={() => setShowPreview(false)}
-                  className="h-7 px-2 hidden lg:inline-flex"
+                  className="h-7 px-2 hidden md:inline-flex"
                   title="Hide preview"
                 >
                   <PanelRightClose className="size-3.5" />
