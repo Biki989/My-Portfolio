@@ -2,6 +2,19 @@
    Portfolio — Biki Kalita
    ============================================================ */
 
+/* ---------- Screen-reader-only utility (for SEO H1) ---------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ---------- Design tokens ---------- */
 :root {
   /* Cool, light-gray editorial palette */

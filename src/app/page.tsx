@@ -49,10 +49,12 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-// Build JSON-LD Person + WebSite structured data so Google can render a
-// rich knowledge card for "Biki Kalita ML Engineer".
+// Build JSON-LD structured data so Google can render a rich knowledge card
+// when someone searches "Biki Kalita". Includes Person, WebSite (with
+// SearchAction for sitelinks search box), ProfilePage, and BreadcrumbList.
 function buildJsonLd(data: Awaited<ReturnType<typeof loadPortfolio>>) {
   const c = data.config
+  const name = c.brandName || 'Biki Kalita'
   const sameAs = data.socials
     .filter((s) => /^https?:\/\//.test(s.url))
     .map((s) => s.url)
@@ -67,7 +69,7 @@ function buildJsonLd(data: Awaited<ReturnType<typeof loadPortfolio>>) {
   const person = {
     '@context': 'https://schema.org',
     '@type': 'Person',
-    name: c.brandName || 'Biki Kalita',
+    name,
     jobTitle: 'ML Engineer',
     description: c.seoDescription,
     url: SITE_URL,
@@ -75,18 +77,27 @@ function buildJsonLd(data: Awaited<ReturnType<typeof loadPortfolio>>) {
     image: `${SITE_URL}/icon.svg`,
     sameAs: sameAs.length > 0 ? sameAs : undefined,
     knowsAbout: Array.from(new Set(knowsAbout)).slice(0, 20),
-    worksFor: undefined,
-    address: undefined,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Assam',
+      addressCountry: 'IN',
+    },
   }
 
+  // WebSite with SearchAction — enables Google sitelinks search box
   const website = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     url: SITE_URL,
-    name: c.brandName || 'Biki Kalita — Portfolio',
+    name: `${name} — Portfolio`,
     description: c.seoDescription,
-    author: { '@type': 'Person', name: c.brandName || 'Biki Kalita' },
+    author: { '@type': 'Person', name },
     inLanguage: 'en',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${SITE_URL}/?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
   }
 
   const profilePage = {
@@ -96,7 +107,21 @@ function buildJsonLd(data: Awaited<ReturnType<typeof loadPortfolio>>) {
     url: SITE_URL,
   }
 
-  return [person, website, profilePage]
+  // BreadcrumbList — helps Google understand the site structure
+  const breadcrumb = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name,
+        item: SITE_URL,
+      },
+    ],
+  }
+
+  return [person, website, profilePage, breadcrumb]
 }
 
 export default async function Home({
@@ -136,6 +161,23 @@ export default async function Home({
             dangerouslySetInnerHTML={{ __html: JSON.stringify(node) }}
           />
         ))}
+        {/* noscript fallback: crawlers that don't run JS still see the name
+            and a description. This is a direct SEO signal for "biki kalita". */}
+        <noscript>
+          <div style={{ padding: '2rem', fontFamily: 'monospace' }}>
+            <h1>Biki Kalita — ML Engineer</h1>
+            <p>
+              ML engineer based in Assam, India. I build and deploy machine
+              learning systems — XGBoost, scikit-learn, FastAPI, Docker.
+              Open to work. Contact: bikikalitaxtra@gmail.com
+            </p>
+            <ul>
+              <li><a href="https://github.com/Biki989">GitHub</a></li>
+              <li><a href="https://www.linkedin.com/in/biki-kalita-1b9807394">LinkedIn</a></li>
+              <li><a href="/Biki-1.2.pdf">Resume</a></li>
+            </ul>
+          </div>
+        </noscript>
         <PortfolioView data={data} />
       </>
     )

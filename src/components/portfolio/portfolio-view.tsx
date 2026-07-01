@@ -35,9 +35,11 @@ export function PortfolioView({ data }: { data: PortfolioData }) {
 
   return (
     <>
-      {/* ─── Fonts (same as original) ─── */}
+      {/* ─── Fonts ─── */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      {/* preload the CSS for faster LCP (Core Web Vitals → SEO) */}
+      <link rel="preload" href="/portfolio.css" as="style" />
       <link
         href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400;1,6..72,500&display=swap"
         rel="stylesheet"
@@ -53,7 +55,7 @@ export function PortfolioView({ data }: { data: PortfolioData }) {
 
       {/* ─── NAV ─── */}
       <header className="nav" id="nav">
-        <a href="#top" className="nav__brand" data-magnetic>
+        <a href="#top" className="nav__brand" data-magnetic aria-label={`${c.brandName} — home`}>
           <span className="nav__mark">{c.brandMark}</span>
           <span className="nav__brandtext">{c.brandName}</span>
         </a>
@@ -66,6 +68,12 @@ export function PortfolioView({ data }: { data: PortfolioData }) {
       </header>
 
       <main id="top">
+        {/* Visually-hidden H1 for SEO — Google weights the H1 heavily for
+            name searches. The visible hero title below is an H2. */}
+        <h1 className="sr-only">
+          Biki Kalita — ML Engineer based in Assam, India
+        </h1>
+
         {/* ─── HERO ─── */}
         <section className="hero" id="hero">
           <canvas className="hero__scene" id="rain" aria-hidden="true"></canvas>
@@ -75,7 +83,7 @@ export function PortfolioView({ data }: { data: PortfolioData }) {
             <p className="hero__eyebrow reveal">
               <span className="dot"></span> {c.heroEyebrow}
             </p>
-            <h1 className="hero__title">
+            <h2 className="hero__title">
               <span className="hero__line reveal" style={{ '--d': '.05s' } as React.CSSProperties}>{c.heroLine1}</span>
               <span className="hero__line reveal" style={{ '--d': '.18s' } as React.CSSProperties}>
                 <em>{c.heroLine2Em}</em> {c.heroLine2Text}
@@ -83,7 +91,7 @@ export function PortfolioView({ data }: { data: PortfolioData }) {
               <span className="hero__line reveal" style={{ '--d': '.31s' } as React.CSSProperties}>
                 {c.heroLine3Pre} <em>{c.heroLine3Em}</em>
               </span>
-            </h1>
+            </h2>
             <p
               className="hero__lede reveal"
               style={{ '--d': '.5s' } as React.CSSProperties}
@@ -206,14 +214,25 @@ export function PortfolioView({ data }: { data: PortfolioData }) {
             </a>
           </h2>
           <p className="contact__sub reveal">{c.contactSub}</p>
+          {/* Visually-hidden address with the name — semantic SEO signal
+              that helps Google associate the name with this page. */}
+          <address className="sr-only">
+            Biki Kalita — ML Engineer, Assam, India. Email: {c.contactEmail}
+          </address>
           <ul className="contact__socials">
             {data.socials.map((s) => {
               const isExternal = /^https?:\/\//.test(s.url)
+              // rel="me" tells Google these profiles belong to the same person
+              // (Biki Kalita), which helps build a knowledge panel.
+              const rel = isExternal
+                ? 'noopener noreferrer me'
+                : undefined
               return (
                 <li key={s.id}>
                   <a
                     href={s.url}
-                    {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    {...(isExternal ? { target: '_blank' } : {})}
+                    {...(rel ? { rel } : {})}
                     data-magnetic
                   >
                     {s.label}
