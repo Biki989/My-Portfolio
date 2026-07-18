@@ -124,8 +124,14 @@ export async function verifyCredentials(
   }
 
   // On success, clear this IP's failure history so a fresh window starts.
+  // Also clean up all old records globally to prevent the table from growing forever.
   await db.loginAttempt.deleteMany({
-    where: { ip, success: false },
+    where: {
+      OR: [
+        { ip, success: false },
+        { createdAt: { lt: windowStart } },
+      ],
+    },
   })
 
   return { ok: true, username: admin!.username }
