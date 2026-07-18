@@ -91,3 +91,4 @@ out/
 # Temporary uploads
 upload/*.zip
 upload/pasted_image_*.png
+ADMIN-GUIDE.md
