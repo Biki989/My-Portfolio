@@ -52,3 +52,42 @@ prompt
 server.log
 # Skills directory
 /skills/
+.env
+.env.local
+.env.*
+# Environment variables
+.env
+.env.local
+.env.*
+!.env.example
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+# Environment
+.env
+.env.local
+.env.*
+
+# Database
+db/*.db
+*.sqlite
+*.sqlite3
+
+# Runtime
+*.pid
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Logs
+*.log
+
+# Temporary uploads
+upload/*.zip
+upload/pasted_image_*.png
