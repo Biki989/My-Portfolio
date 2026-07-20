@@ -44,7 +44,7 @@ export async function GET() {
   ])
 
   return NextResponse.json({
-    config: config ?? {},
+    config: (config as unknown as Record<string, string>) ?? {},
     marquee,
     projects,
     stats,
