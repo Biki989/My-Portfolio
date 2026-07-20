@@ -24,9 +24,10 @@ function generateNonce(): string {
 // inline scripts when the nonce is read via headers() in the root layout;
 // we add it manually to JSON-LD blocks in page.tsx).
 function buildCsp(nonce: string): string {
+  const isDev = process.env.NODE_ENV === 'development'
   return [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' https://cdnjs.cloudflare.com`,
+    `script-src 'self' 'nonce-${nonce}' https://cdnjs.cloudflare.com${isDev ? " 'unsafe-eval'" : ""}`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src 'self' https://fonts.gstatic.com data:`,
     `img-src 'self' data: https:`,

@@ -258,10 +258,12 @@ export function PortfolioView({ data }: { data: PortfolioData }) {
       <Script
         src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
         strategy="beforeInteractive"
+        suppressHydrationWarning
       />
       <Script
         src="/portfolio.js"
         strategy="afterInteractive"
+        suppressHydrationWarning
       />
     </>
   )

@@ -158,6 +158,7 @@ export default async function Home({
             key={i}
             type="application/ld+json"
             nonce={nonce}
+            suppressHydrationWarning
             dangerouslySetInnerHTML={{ __html: JSON.stringify(node) }}
           />
         ))}

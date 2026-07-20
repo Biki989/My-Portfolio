@@ -92,3 +92,5 @@ out/
 upload/*.zip
 upload/pasted_image_*.png
 ADMIN-GUIDE.md
+.vercel
+.env*
