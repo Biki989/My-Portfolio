@@ -40,7 +40,7 @@ function buildCsp(nonce: string): string {
   ].join('; ')
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const nonce = generateNonce()
 
   // Pass the nonce to server components via a request header so layout.tsx
